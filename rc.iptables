@@ -1,0 +1,88 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:		rc.firewall
+# Required-Start:	$local_fs $network $syslog
+# Required-Stop:	$local_fs $network $syslog
+# Default-Start:	2 3 4 5
+# Default-Stop:		0 1 6
+# X-Interactive:	true
+# Short-Description:	Start/Stop firewall rules
+### END INIT INFO
+######################################################
+####
+# This configuraion for netfilter/iptables is made for 
+# a laptop computer.
+#
+#
+#
+####
+
+####
+# Global variable
+IPTABLES="/sbin/iptables"
+LOG="/var/log/iptables.log"
+FSTATUS="/var/run/rc.iptables"
+RULES="ipt_rules"
+
+####
+# Function
+error() {
+	echo $1 >&2
+	exit 1
+}
+
+########################################################
+if [ ! -x $RULES ]; then
+	error "No ipt_rules file found"
+fi
+
+if [ -x $IPTABLES ]; then
+	error "Cannot execute iptables"
+fi
+
+####
+# Load rules function
+. $RULES
+
+
+if [ $# -ne 1 ]; then
+	error "Usage : ${0##*/} { start | stop | status }"
+fi
+
+if [ ! -f $FSTATUS ]; then
+	echo 0 > $FSTATUS
+fi
+
+IPTSTATUS=`cat $FSTATUS`
+
+case $1 in
+	start)
+		echo "Starting iptables rules..."
+		if start ; then
+			echo 1 > $FSTATUS
+			echo -e "Rules loaded\t\t[OK]"
+		fi
+		;;
+
+	stop)
+		echo "Stopping the firewall protection"
+		if stop ; then
+			echo 0 > $FSTATUS
+			echo -e "Firewall rules stopped\t\t[OK]"
+		fi
+		;;
+
+	status)
+		if [ $IPTSTATUS -eq 0 ]; then
+			echo "/!\ Protection is disable"
+		else
+			echo -e "Protection is enable\t\t[OK]"
+		fi
+		;;
+
+	*)
+		error "Usage : ${0##*/} { start | stop | status }"
+		;;
+esac
+
+exit 0

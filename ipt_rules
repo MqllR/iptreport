@@ -1,0 +1,89 @@
+#!/bin/bash
+
+start() {
+	## Default strategie
+	####
+	$IPTABLES -P INPUT DROP
+	$IPTABLES -P FORWARD DROP
+	$IPTABLES -P OUTPUT DROP
+
+	## Create new chain
+	####
+	$IPTABLES -N bad_tcp_packet
+	$IPTABLES -N allow
+	$IPTABLES -N tcp_packet
+	$IPTABLES -N udp_packet
+	$IPTABLES -N icmp_packet
+
+	## bad_tcp_packet chain
+	####
+	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags SYN,ACK SYN,ACK -m state --state NEW -j REJECT --reject-with tcp-reset
+	$IPTABLES -A bad_tcp_packet -p tcp ! --syn -m state --state NEW -j LOG --log-level debug --log-prefix "New not SYN :"
+	$IPTABLES -A bad_tcp_packet -p tcp ! --syn -m state --state NEW -j DROP 
+
+	## allow chain
+	####
+	$IPTABLES -A allow -p tcp --syn -j ACCEPT
+	$IPTABLES -A allow -p tcp -m state --state ESTABLISHED,RELATED -j ACCEPT
+	$IPTABLES -A allow -p tcp -j DROP
+	
+	## tcp_packet chain
+	####	
+	$IPTABLES -A tcp_packet -p tcp -s 0/0 --dport 222 -j allow
+	$IPTABLES -A tcp_packet -p tcp -s 0/0 --dport 80 -j allow
+
+	## upd_packet chain
+	####
+
+
+	## icmp_packet chain
+	####
+	$IPTABLES -A icmp_packet -p icmp -s 0/0 --icmp-type 8 -j ACCEPT
+	$IPTABLES -A icmp_packet -p icmp -s 0/0 --icmp-type 11 -j ACCEPT
+
+	## INPUT chain
+	####
+	# Check the tcp packet
+	$IPTABLES -A INPUT -p tcp -j bad_tcp_packet
+
+	# Accept everything from localhost
+	$IPTABLES -A INPUT -p ALL -i lo -j ACCEPT
+
+	# Rule for incomming packet from the internet
+	$IPTABLES -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT
+	$IPTABLES -A INPUT -p tcp -j tcp_packet
+	$IPTABLES -A INPUT -p udp -j udp_packet
+	$IPTABLES -A INPUT -p icmp -j icmp_packet
+
+	# Log weird packets
+	$IPTABLES -A INPUT -m limit --limit 3/minute --limit-burst 3 -j LOG --log-level debug --log-prefix "IPT INPUT packet died :"
+
+	## FORWARD chain
+	####
+
+
+	## OUTPUT chain
+	####
+	# Check the tcp packet
+	$IPTABLES -A OUTPUT -p tcp -j bad_tcp_packet
+
+	# Ouput rules
+	$IPTABLES -A OUTPUT -p ALL -j ACCEPT
+
+	return 0
+}
+
+stop() {
+	# Flush tables
+	$IPTABLES -F
+
+	# Delete all chain
+	$IPTABLES -X
+
+	# Default strategie
+	$IPTABLES -P INPUT ACCEPT
+	$IPTABLES -P FORWARD ACCEPT
+	$IPTABLES -P OUTPUT ACCEPT
+
+	return 0
+}
