@@ -20,7 +20,7 @@ error() {
 
 syntax() {
 	echo "Usage : ${0##*/} [-d <day>]"
-	echo "<day> can be 1 or more day of the month. "
+	echo "<day> is 1 day of the month. "
 	echo "Eg : 12   will be the 12th day of the month"
 }
 

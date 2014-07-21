@@ -19,10 +19,9 @@
 
 ####
 # Global variable
-IPTABLES="/sbin/iptables"
-LOG="/var/log/iptables.log"
 FSTATUS="/var/run/rc.iptables"
 RULES="ipt_rules"
+IPTABLES="/sbin/iptables"
 
 ####
 # Function
@@ -36,7 +35,14 @@ if [ ! -x $RULES ]; then
 	error "No ipt_rules file found"
 fi
 
-if [ -x $IPTABLES ]; then
+if [ ! `id |awk -F'=' '{ \
+			sub("\(","=",$0) ; print $2 }'` \
+			-eq 0 ]
+then
+	error "You must be root to run iptables rules"
+fi
+
+if [ ! -x $IPTABLES ]; then
 	error "Cannot execute iptables"
 fi
 
@@ -57,6 +63,11 @@ IPTSTATUS=`cat $FSTATUS`
 
 case $1 in
 	start)
+		if [ $IPTSTATUS -eq 1 ]; then
+			echo "iptables rules are already running"
+			exit 0
+		fi
+
 		echo "Starting iptables rules..."
 		if start ; then
 			echo 1 > $FSTATUS
@@ -65,6 +76,11 @@ case $1 in
 		;;
 
 	stop)
+		if [ $IPTSTATUS -eq 0 ]; then
+			echo "iptables rules are already stopped"
+			exit 0
+		fi
+
 		echo "Stopping the firewall protection"
 		if stop ; then
 			echo 0 > $FSTATUS

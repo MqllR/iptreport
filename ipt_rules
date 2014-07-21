@@ -10,16 +10,27 @@ start() {
 	## Create new chain
 	####
 	$IPTABLES -N bad_tcp_packet
+	$IPTABLES -N logndrop
 	$IPTABLES -N allow
 	$IPTABLES -N tcp_packet
 	$IPTABLES -N udp_packet
 	$IPTABLES -N icmp_packet
-
+	
 	## bad_tcp_packet chain
 	####
 	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags SYN,ACK SYN,ACK -m state --state NEW -j REJECT --reject-with tcp-reset
-	$IPTABLES -A bad_tcp_packet -p tcp ! --syn -m state --state NEW -j LOG --log-level debug --log-prefix "New not SYN :"
+	$IPTABLES -A bad_tcp_packet -p tcp ! --syn -m state --state NEW -j LOG --log-level debug --log-prefix "IPT New not SYN"
 	$IPTABLES -A bad_tcp_packet -p tcp ! --syn -m state --state NEW -j DROP 
+	$IPTABLES -A bad_tcp_packet -p tcp --syn -m limit --limit 5/m --limit-burst 7 -j logndrop 
+	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags ALL NONE -m limit --limit 5/m --limit-burst 7 -j logndrop 
+	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags SYN,FIN SYN,FIN -m limit --limit 5/m --limit-burst 7 -j logndrop 
+	$IPTABLES -A bad_tcp_packet -p tcp -m tcp --dport 139 -m recent --name portscan --set -j LOG --log-level debug --log-prefix "IPT Warn portscan"
+	$IPTABLES -A bad_tcp_packet -p tcp -m tcp --dport 139 -m recent --name portscan --set -j DROP 
+
+	## logndrop chain
+	####
+	$IPTABLES -A logndrop -m limit --limit 5/m --limit-burst 3 -j LOG --log-level debug --log-prefix "IPT Warn DOS attack"
+	$IPTABLES -A logndrop -j DROP
 
 	## allow chain
 	####
@@ -38,16 +49,22 @@ start() {
 
 	## icmp_packet chain
 	####
+	$IPTABLES -A icmp_packet -p icmp -m limit --limit 2/s --limit-burst 2 -j LOG --log-level debug --log-prefix "IPT Warn flood ICMP"
+	$IPTABLES -A icmp_packet -p icmp -m limit --limit 2/s --limit-burst 2 -j DROP
 	$IPTABLES -A icmp_packet -p icmp -s 0/0 --icmp-type 8 -j ACCEPT
 	$IPTABLES -A icmp_packet -p icmp -s 0/0 --icmp-type 11 -j ACCEPT
 
 	## INPUT chain
 	####
-	# Check the tcp packet
-	$IPTABLES -A INPUT -p tcp -j bad_tcp_packet
-
+	
 	# Accept everything from localhost
 	$IPTABLES -A INPUT -p ALL -i lo -j ACCEPT
+
+	# Anyone who tried to portscan us is blocked for a day
+	$IPTABLES -A INPUT -m recent --name portscan --rcheck --seconds 86400 -j DROP
+
+	# Check the tcp packet
+	$IPTABLES -A INPUT -p tcp -j bad_tcp_packet
 
 	# Rule for incomming packet from the internet
 	$IPTABLES -A INPUT -p ALL -m state --state ESTABLISHED,RELATED -j ACCEPT
@@ -56,7 +73,7 @@ start() {
 	$IPTABLES -A INPUT -p icmp -j icmp_packet
 
 	# Log weird packets
-	$IPTABLES -A INPUT -m limit --limit 3/minute --limit-burst 3 -j LOG --log-level debug --log-prefix "IPT INPUT packet died :"
+	$IPTABLES -A INPUT -m limit --limit 3/minute --limit-burst 3 -j LOG --log-level debug --log-prefix "IPT INPUT packet died"
 
 	## FORWARD chain
 	####
@@ -74,16 +91,17 @@ start() {
 }
 
 stop() {
-	# Flush tables
-	$IPTABLES -F
-
-	# Delete all chain
-	$IPTABLES -X
 
 	# Default strategie
 	$IPTABLES -P INPUT ACCEPT
 	$IPTABLES -P FORWARD ACCEPT
 	$IPTABLES -P OUTPUT ACCEPT
+
+	# Flush tables
+	$IPTABLES -F
+
+	# Delete all chain
+	$IPTABLES -X
 
 	return 0
 }
