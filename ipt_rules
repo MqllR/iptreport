@@ -1,5 +1,16 @@
 #!/bin/bash
 
+###################
+# iptables rules used by rc.iptables at the start up.
+#
+# Some chains are created to simplify and get more faster
+# analysis by the kernel. If you need to allow input ports, fill 
+# the tcp_packet, udp_packet or icmp_packet chain. The
+# default strategie is that every output packet is allowed.
+#
+# Contact : ride_online@hotmail.fr
+####################
+
 start() {
 	## Default strategie
 	####

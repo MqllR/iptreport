@@ -1,5 +1,14 @@
 #!/usr/bin/awk
 
+###########################
+# anlog.awk is a awk script to analysis the iptables log.
+#
+# It creates the file output in the directory /usr/local/iptreport
+#
+# contact : ride_online@hotmail.fr
+###########################
+
+# BEGIN : get the arguments passed by ipt_analysis and initialize the variables
 BEGIN {
 	if ( ARGC == 4 ){
 		nbday=ARGV[1]
@@ -16,10 +25,11 @@ BEGIN {
 		delete ARGV[1]
 	}
 	else {		
-		print "Error with syntax"
+		print "Error of syntax"
 		exit 1
 	}
 
+# Counters
 	ind_in=0
 	ind_in_tcp=0
 	ind_in_udp=0
@@ -31,6 +41,7 @@ BEGIN {
 	ind_syn_udp=0
 }
 
+# We get back the lines writed by iptables and fill the arrays
 $2 == nbday && $8 ~ /IPT/ {
 
 	if($9 ~ /INPUT/) {
@@ -79,6 +90,7 @@ $2 == nbday && $8 ~ /IPT/ {
 	}
 }
 
+# END : we shape the data collected
 END {
 	print "---------- Analysis of iptables.log  -----------" > FREPORT
 

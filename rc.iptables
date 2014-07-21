@@ -11,10 +11,16 @@
 ######################################################
 ####
 # This configuraion for netfilter/iptables is made for 
-# a laptop computer.
+# a laptop computer and cannot be used for a server. Any 
+# packets droped is logged in /var/log/iptables previously 
+# configured in syslogd as a LOCAL variable for the DEBUG 
+# level in the kernel.
 #
+# Every name used for the logs file will be analyse with a AWK
+# script called by a bash script who could be used by cron
+# to get back log file daily.
 #
-#
+# Contact : ride_online@hotmail.fr
 ####
 
 ####
