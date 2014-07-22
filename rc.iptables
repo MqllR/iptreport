@@ -58,7 +58,7 @@ fi
 
 
 if [ $# -ne 1 ]; then
-	error "Usage : ${0##*/} { start | stop | status }"
+	error "Usage : ${0##*/} { start | stop | restart | status }"
 fi
 
 if [ ! -f $FSTATUS ]; then
@@ -102,8 +102,30 @@ case $1 in
 		fi
 		;;
 
+	restart)
+		if [ $IPTSTATUS -eq 0 ]; then
+			echo "Starting iptables rules..."
+			if start ; then
+				echo 1 > $FSTATUS
+				echo -e "Rules loaded\t\t[OK]"
+			fi
+		else
+			echo "Stopping the firewall protection"
+			if stop ; then
+				echo 0 > $FSTATUS
+				echo -e "Firewall rules stopped\t\t[OK]"
+			fi
+
+			echo "Starting iptables rules..."
+			if start ; then
+				echo 1 > $FSTATUS
+				echo -e "Rules loaded\t\t[OK]"
+			fi
+		fi
+		;;
+
 	*)
-		error "Usage : ${0##*/} { start | stop | status }"
+		error "Usage : ${0##*/} { start | stop | restart | status }"
 		;;
 esac
 
