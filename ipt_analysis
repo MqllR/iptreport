@@ -3,9 +3,9 @@
 ##########################
 # ipt_analysis will simplify the iptables log reading.
 #
-# If ipt_analysis doesn't take an argument, it will
-# analyse this day. Otherwise, it will analyse the day
-# gave with the option -d.
+# If ipt_analysis doesn't take arguments, it will
+# analyse the current day. Otherwise, it will analyse the day
+# gave with the -d option.
 #
 # Contact : ride_online@hotmail.fr
 ###########################
@@ -27,40 +27,47 @@ error() {
 syntax() {
 	echo "Usage : ${0##*/} [-d <day>]"
 	echo "<day> is 1 day of the month. "
-	echo "Eg : 12   will be the 12th day of the month"
+	echo "Eg: 12   will be the 12th day of the month"
 }
 
 #############################################################################
 ################      STARTING PROGRAM
 
-if [ ! `id |awk -F'=' '{ \
-			sub("\(","=",$0) ; print $2 }'` \
-			-eq 0 ]
+if [ ! `id -u` -eq 0 ]
 then
 	error "You must be root to run iptables rules"
 fi
 
 test -d $DIRSTOR || mkdir $DIRSTOR
 
-if [[ $# -gt 2 || $# -eq 1 ]]; then
-	syntax
-	exit 1
-elif [[ $# -eq 2 && $1 != -[a-z] ]]; then
-	syntax
-	exit 1
-fi
+#if [[ $# -gt 2 || $# -eq 1 ]]; then
+#	syntax
+#	exit 1
+#if [[ $# -ge 1 && $1 != -[a-z] ]]; then
+#	syntax
+#	exit 1
+#fi
 
-while getopts ":d:" option
+while getopts ":hd:" option
 do
 	case "$option" in
+		
+		## help option
+		h)
+			syntax
+			exit 0
+			;;
+		## day option
 		d)
 			nbday=$OPTARG
 			;;
 		:)
 			error "Need an argument for -$OPTARG"
+			syntax
 			;;
 		\?)
 			error "INVALID OPTION"
+			syntax
 			;;
 	esac
 done

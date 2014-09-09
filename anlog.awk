@@ -63,7 +63,7 @@ function shape_tcp(ind,tab_tcp) {
 		tcp_flag=""
 
 		while(vtab_tcp[j]) {
-			if(vtab_tcp[j] ~ /SYN|RST|ACK|FIN/) {
+			if(vtab_tcp[j] ~ /SYN|RST|ACK|FIN|URG|PSH/) {
 				flag=vtab_tcp[j]
 				tcp_flag=tcp_flag flag
 			}
