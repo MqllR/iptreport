@@ -13,8 +13,8 @@
 # This configuraion for netfilter/iptables is made for 
 # a laptop computer and cannot be used for a server. Any 
 # packets droped is logged in /var/log/iptables previously 
-# configured in syslogd as a LOCAL variable for the DEBUG 
-# level in the kernel.
+# configured in syslogd as a the kern facility for the DEBUG 
+# level.
 #
 # Every name used for the logs file will be analyse with a AWK
 # script called by a bash script who could be used by cron
@@ -25,7 +25,7 @@
 
 ####
 # Global variable
-FSTATUS="/var/run/rc.iptables"
+FSTATUS="/var/run/iptables.stat"
 RULES="ipt_rules"
 IPTABLES="/sbin/iptables"
 
@@ -38,12 +38,10 @@ error() {
 
 ########################################################
 if [ ! -x $RULES ]; then
-	error "No ipt_rules file found"
+	error "Cannot execute or find ipt_rules"
 fi
 
-if [ ! `id |awk -F'=' '{ \
-			sub("\(","=",$0) ; print $2 }'` \
-			-eq 0 ]
+if [ ! `id -u` -eq 0 ]
 then
 	error "You must be root to run iptables rules"
 fi
