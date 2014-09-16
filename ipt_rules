@@ -35,9 +35,9 @@ start() {
 	$IPTABLES -A bad_tcp_packet -p tcp ! --syn -m state --state NEW -j DROP
 
  	## Prevent DOS TCP attack
-	$IPTABLES -A bad_tcp_packet -p tcp --syn -m limit --limit 5/m --limit-burst 7 -j ACCEPT 
-	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags ALL NONE -m limit --limit 5/m --limit-burst 7 -j ACCEPT 
-	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags SYN,FIN SYN,FIN -m limit --limit 5/m --limit-burst 7 -j ACCEPT 
+	$IPTABLES -A bad_tcp_packet -p tcp --syn -m limit --limit 5/m --limit-burst 7 -j RETURN 
+	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags ALL NONE -m limit --limit 5/m --limit-burst 7 -j RETURN 
+	$IPTABLES -A bad_tcp_packet -p tcp --tcp-flags SYN,FIN SYN,FIN -m limit --limit 5/m --limit-burst 7 -j RETURN 
 	$IPTABLES -A bad_tcp_packet -p tcp -m tcp --dport 139 -m recent --name portscan --set -j LOG --log-level debug --log-prefix "IPT Warn portscan "
 	$IPTABLES -A bad_tcp_packet -p tcp -m tcp --dport 139 -m recent --name portscan --set -j DROP 
 
@@ -46,14 +46,14 @@ start() {
 	$IPTABLES -A dos_tcp -j DROP
 
 	## Prevent DOS UDP attack
-	$IPTABLES -A dos_udp -p udp -m limit --limit 4/s --limit-burst 2 -j ACCEPT
+	$IPTABLES -A dos_udp -p udp -m limit --limit 4/s --limit-burst 2 -j RETURN 
 
 	## And LOG it !
 	$IPTABLES -A dos_udp -m limit --limit 5/m --limit-burst 3 -j LOG --log-level debug --log-prefix "IPT Warn DOS attack "
 	$IPTABLES -A dos_udp -j DROP
 
 	## Prevent DOS ICMP attack
-	$IPTABLES -A dos_icmp -p icmp -m limit --limit 2/s --limit-burst 2 -j ACCEPT
+	$IPTABLES -A dos_icmp -p icmp -m limit --limit 2/s --limit-burst 2 -j RETURN
 
 	## And LOG it !
 	$IPTABLES -A dos_icmp -m limit --limit 5/m --limit-burst 3 -j LOG --log-level debug --log-prefix "IPT Warn DOS attack "
@@ -65,7 +65,11 @@ start() {
 	$IPTABLES -A allow -p tcp --syn -j ACCEPT
 	$IPTABLES -A allow -p tcp -m state --state ESTABLISHED,RELATED -j ACCEPT
 	$IPTABLES -A allow -p tcp -j DROP
-	
+
+	#################################################
+	### FILL THOSE RULES ACCORDING YOUR NEEDS 	#
+	#################################################
+
 	## tcp_packet chain
 	####	
 	$IPTABLES -A tcp_packet -p tcp -s 0/0 --dport 222 -j allow
@@ -78,14 +82,12 @@ start() {
 
 	## icmp_packet chain
 	####
-	$IPTABLES -A icmp_packet -p icmp -m limit --limit 2/s --limit-burst 2 -j LOG --log-level debug --log-prefix "IPT Warn flood ICMP "
-	$IPTABLES -A icmp_packet -p icmp -m limit --limit 2/s --limit-burst 2 -j DROP
 	$IPTABLES -A icmp_packet -p icmp -s 0/0 --icmp-type 8 -j ACCEPT
 	$IPTABLES -A icmp_packet -p icmp -s 0/0 --icmp-type 11 -j ACCEPT
 
-	###############################################################################
-	## INPUT chain
-	###############################################################################
+	#################################################################################
+	## INPUT chain									#
+	#################################################################################
 	
 	# Accept everything from localhost
 	$IPTABLES -A INPUT -p ALL -i lo -j ACCEPT
@@ -112,12 +114,13 @@ start() {
 	# Log weird packets
 	$IPTABLES -A INPUT -m limit --limit 3/minute --limit-burst 3 -j LOG --log-level debug --log-prefix "IPT INPUT packet died "
 
-	## FORWARD chain
-	####
+	#################################################################
+	## FORWARD chain						#
+	#################################################################
 
-
-	## OUTPUT chain
-	####
+	#################################################################
+	## OUTPUT chain							#
+	#################################################################
 	
 	# Ouput rules
 	$IPTABLES -A OUTPUT -p ALL -j ACCEPT
