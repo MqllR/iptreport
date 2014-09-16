@@ -28,6 +28,7 @@
 FSTATUS="/var/run/iptables.stat"
 RULES="ipt_rules"
 IPTABLES="/sbin/iptables"
+IP6TABLES="/sbin/ip6tables"
 
 ####
 # Function
