@@ -121,7 +121,7 @@ case $1 in
 			log_daemon_msg "Starting iptables rules..." "rc.iptables"
 			if start ; then
 				echo 1 > $FSTATUS
-				echo -e "Rules loaded\t\t[OK]"
+				log_success_msg "iptables rules loaded"
 			fi
 		fi
 		;;
