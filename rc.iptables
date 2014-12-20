@@ -31,33 +31,34 @@ IPTABLES="/sbin/iptables"
 IP6TABLES="/sbin/ip6tables"
 
 ####
-# Function
-error() {
-	echo $1 >&2
-	exit 1
-}
+# Load init-functions 
+. /lib/lsb/init-functions
 
 ########################################################
 if [ ! -x $RULES ]; then
-	error "Cannot execute or find ipt_rules"
+	log_action_msg "Cannot execute or find ipt_rules"
+	log_end_msg 1
 fi
 
 if [ ! `id -u` -eq 0 ]
 then
-	error "You must be root to run iptables rules"
+	log_action_msg "You must be root to run iptables rules"
+	log_end_msg 1
 fi
 
 if [ ! -x $IPTABLES ]; then
-	error "Cannot execute iptables"
+	log_action_msg "Cannot execute iptables"
+	log_end_msg 1
 fi
 
 ####
-# Load rules function
+# Load iptables rules
 . $RULES
 
 
 if [ $# -ne 1 ]; then
-	error "Usage : ${0##*/} { start | stop | restart | status }"
+	log_action_msg "Usage : ${0##*/} { start | stop | restart | status }"
+	log_end_msg 1
 fi
 
 if [ ! -f $FSTATUS ]; then
@@ -69,53 +70,55 @@ IPTSTATUS=`cat $FSTATUS`
 case $1 in
 	start)
 		if [ $IPTSTATUS -eq 1 ]; then
-			echo "iptables rules are already running"
-			exit 0
+			log_action_msg "iptables rules are already running"
+			log_end_msg 0
 		fi
 
-		echo "Starting iptables rules..."
+		log_daemon_msg "Starting iptables rules..." "rc.iptables"
+
 		if start ; then
 			echo 1 > $FSTATUS
-			echo -e "Rules loaded\t\t[OK]"
+			log_success_msg "iptables rules loaded"
 		fi
 		;;
 
 	stop)
 		if [ $IPTSTATUS -eq 0 ]; then
-			echo "iptables rules are already stopped"
-			exit 0
+			log_action_msg "iptables rules are already stopped"
+			log_end_msg 0
 		fi
 
-		echo "Stopping the firewall protection"
+		log_daemon_msg "Stopping iptables rules..." "rc.iptables"
+
 		if stop ; then
 			echo 0 > $FSTATUS
-			echo -e "Firewall rules stopped\t\t[OK]"
+			log_success_msg "iptables rules stopped"
 		fi
 		;;
 
 	status)
 		if [ $IPTSTATUS -eq 0 ]; then
-			echo "/!\ Protection is disable"
+			log_failure_msg "Protection is disable"
 		else
-			echo -e "Protection is enable\t\t[OK]"
+			log_success_msg "Protection is enable"
 		fi
 		;;
 
 	restart)
 		if [ $IPTSTATUS -eq 0 ]; then
-			echo "Starting iptables rules..."
+			log_daemon_msg "Starting iptables rules..." "rc.iptables"
 			if start ; then
 				echo 1 > $FSTATUS
 				echo -e "Rules loaded\t\t[OK]"
 			fi
 		else
-			echo "Stopping the firewall protection"
+			log_daemon_msg "Stopping iptables rules..." "rc.iptables"
 			if stop ; then
 				echo 0 > $FSTATUS
 				echo -e "Firewall rules stopped\t\t[OK]"
 			fi
 
-			echo "Starting iptables rules..."
+			log_daemon_msg "Starting iptables rules..." "rc.iptables"
 			if start ; then
 				echo 1 > $FSTATUS
 				echo -e "Rules loaded\t\t[OK]"
@@ -124,7 +127,8 @@ case $1 in
 		;;
 
 	*)
-		error "Usage : ${0##*/} { start | stop | restart | status }"
+		log_action_msg "Usage : ${0##*/} { start | stop | restart | status }"
+		log_end_msg 1
 		;;
 esac
 
