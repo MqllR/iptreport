@@ -20,13 +20,13 @@
 # script called by a bash script who could be used by cron
 # to get back log file daily.
 #
-# Contact : ride_online@hotmail.fr
+# Contact : ride_online@hotmail.fr 
 ####
 
 ####
 # Global variable
 FSTATUS="/var/run/iptables.stat"
-RULES="ipt_rules"
+RULES="/usr/local/script/ipt_rules"
 IPTABLES="/sbin/iptables"
 IP6TABLES="/sbin/ip6tables"
 
@@ -35,20 +35,24 @@ IP6TABLES="/sbin/ip6tables"
 . /lib/lsb/init-functions
 
 ########################################################
-if [ ! -x $RULES ]; then
-	log_action_msg "Cannot execute or find ipt_rules"
-	log_end_msg 1
-fi
 
 if [ ! `id -u` -eq 0 ]
 then
 	log_action_msg "You must be root to run iptables rules"
 	log_end_msg 1
+	exit 1
+fi
+
+if [ ! -x $RULES ]; then
+	log_action_msg "Cannot execute or find ipt_rules"
+	log_end_msg 1
+	exit 1
 fi
 
 if [ ! -x $IPTABLES ]; then
 	log_action_msg "Cannot execute iptables"
 	log_end_msg 1
+	exit 1
 fi
 
 ####
@@ -58,7 +62,8 @@ fi
 
 if [ $# -ne 1 ]; then
 	log_action_msg "Usage : ${0##*/} { start | stop | restart | status }"
-	log_end_msg 1
+	log_end_msg 255
+	exit 1
 fi
 
 if [ ! -f $FSTATUS ]; then
@@ -72,12 +77,16 @@ case $1 in
 		if [ $IPTSTATUS -eq 1 ]; then
 			log_action_msg "iptables rules are already running"
 			log_end_msg 0
+			exit 0
 		fi
 
 		log_daemon_msg "Starting iptables rules..." "rc.iptables"
 
 		if start ; then
 			echo 1 > $FSTATUS
+			log_end_msg 0
+		else
+			log_end_msg 1
 		fi
 		;;
 
@@ -85,12 +94,16 @@ case $1 in
 		if [ $IPTSTATUS -eq 0 ]; then
 			log_action_msg "iptables rules are already stopped"
 			log_end_msg 0
+			exit 0
 		fi
 
 		log_daemon_msg "Stopping iptables rules..." "rc.iptables"
 
 		if stop ; then
 			echo 0 > $FSTATUS
+			log_end_msg 0
+		else
+			log_end_msg 1
 		fi
 		;;
 
@@ -106,8 +119,12 @@ case $1 in
 		if [ $IPTSTATUS -eq 0 ]; then
 
 			log_daemon_msg "Starting iptables rules..." "rc.iptables"
+
 			if start ; then
 				echo 1 > $FSTATUS
+				log_end_msg 0
+			else
+				log_end_msg 1
 			fi
 		else
 
@@ -115,19 +132,25 @@ case $1 in
 
 			if stop ; then
 				echo 0 > $FSTATUS
+				log_end_msg 0
+			else
+				log_end_msg 1
 			fi
 
 			log_daemon_msg "Starting iptables rules..." "rc.iptables"
 
 			if start ; then
 				echo 1 > $FSTATUS
+				log_end_msg 0
+			else
+				log_end_msg 1
 			fi
 		fi
 		;;
 
 	*)
 		log_action_msg "Usage : ${0##*/} { start | stop | restart | status }"
-		log_end_msg 1
+		log_end_msg 255
 		;;
 esac
 
