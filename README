@@ -1,11 +1,1 @@
-Description
-
-iptreport is composed by an systemV script who load the iptables rules at start up and a script of iptables log analysis. 
-
-The script's start-up loaded is rc.iptables and the iptables rules are located in the ipt_rules script. It must be situated in an executable directory 
-as it describe in the environnement variable $PATH. The iptables rules is made for a laptop computer, so there is a lack of network information
-and interface used. 3 kind of information is logged on the file /var/log/iptables.log : INPUT traffic, packet NEW but not with the SYN flag, and divers 
-kind of attack (portscan, SYN flood, XMAS, NULL).
-
-The second part of this repository is dedicated for the analyse of the log file. A bash script named ipt_analysis call an AWK script to extract the 
-information. It makes more readable the information and store the files in the directory /usr/local/iptreport. ipt_analysis can be used in the cron daemon.
+iptreport comes with an init script who load the iptables rules at startup and an AWK script to analysis logs. 
